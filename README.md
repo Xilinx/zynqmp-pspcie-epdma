@@ -8,8 +8,20 @@ The files in this directory provide Xilinx ZynqMP PS-PCIe End Point DMA drivers,
 
 Operating System Support:
 =========================
-Operating System Architecture: x86_64
-Ubuntu:		Ubuntu 20.04.3 LTS
+Operating System :
+
+Distributor ID:	Ubuntu
+
+Description:	Ubuntu 20.04.4 LTS
+
+Release:	20.04
+
+Codename:	focal 
+
+HW Patform -X86
+
+
+
 
 HW Requirement:
 ===============
@@ -52,19 +64,21 @@ Usage:
  - Compile  kernel module driver and application.																
 
 	make
- - install the kernel module driver.																		
+ - install the kernel module driver.
 
+													
 	sudo make insert
- - Clean Driver and Application
+ 
+- Change permission ps_pcie* nodes ,so that application can run without sudo permission
 
-	make clean
+	sudo chmod 777 /dev/ps_pcie*	
  - Test App - DMA Transfers Application
 
 	cd apps
 
-	sudo ./simple_test -c 0 -a 0x100000 -l 1024 -d s2c
+	./simple_test -c 0 -a 0x100000 -l 1024 -d s2c
 
-	sudo ./simple_test -c 1 -a 0x100000 -l 1024 -d c2s
+	./simple_test -c 1 -a 0x100000 -l 1024 -d c2s
 
 		-c option specifies channel number.
 		-a option specifies end point address.
@@ -75,17 +89,25 @@ Usage:
 
 	cd apps
 
-	sudo ./pio_test -o 0x0 -l 64	
+	./pio_test -o 0x0 -l 64	
 
 		-o option specifies offset at PCI BAR 2.
-		-l option specifies length of data to be written and read back.		
+		-l option specifies length of data to be written and read back.
+
+- Uninstall the kernel module
+
+	sudo make remove 
+
+
+
+- Clean Driver and Application
+
+	make clean
+
 
 Frequently Asked Questions                                                                                                                                                             
 
-	Q. How do we unistall kernel module driver ? 																
-	A: Use the following commands to uninstall the driver.																
-		- Uninstall the kernel module.																		
-			sudo make remove  																			
+				
 	Q: How do I modify the PCIe Device IDs recognized by the kernel module driver?												
 	A: The driver/ps_pcie_dma.c file constains the pci_device_id struct that identifies												
 	   the PCIe Device IDs that are recognized by the driver in the following format:												
