@@ -38,9 +38,11 @@
 #define CHAR_DRIVER_NAME               "ps_pcie_dmachan"
 
 #define PIO_CHAR_DRIVER_NAME           "ps_pcie_pio"
-
+#define EGRESS_DMA_CH1 			0x80
+#define EGRESS_TEST_BUF_SIZE 		0x100000U
 #define EP_TRANSLATION_CHECK            0xCCCCCCCC
-#define IOCTL_EP_CHECK_TRANSLATION     _IO('z', 0x01)
+#define IOCTL_INGRESS_EP_CHECK_TRANSLATION     _IO('z', 0x01)
+#define IOCTL_EGRESS_EP_CHECK_TRANSLATION     _IO('z', 0x02)
 
 #define NUMBER_OF_BUFFER_DESCRIPTORS   1999
 
