@@ -16,6 +16,8 @@ Description:	Ubuntu 20.04.4 LTS
 
 Release:	20.04
 
+Kernel Version: 5.4.0-182-generic
+
 Codename:	focal 
 
 HW Patform -X86
