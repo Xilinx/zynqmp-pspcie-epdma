@@ -41,9 +41,10 @@ static void usage(void)
         printf("Offset, packet length\n");
         printf( "Offset      :Address on EP to do DMA\n"
                 "length      :Number of bytes to be transferred\n"
+		"test	     :Run ingress/egress test\n"
                 "             This number has to be choosen according to translation size set\n");
 
-        printf ("Example Usage :./pio_test -o 0x0 -l 64\n");
+        printf ("Example Usage :./pio_test -o 0x0 -l 64 -t ingress/egress \n");
         exit(EXIT_SUCCESS);
 }
 
@@ -85,13 +86,16 @@ int main (int argc, char *argv[])
 	u_int32_t      data_size;
 	u_int32_t     *rd_wr_buf, *verif_buf;
 	int opt;
+	char *ptr;
 	unsigned char pio_dev_path[50];
 	
-	while ((opt = getopt(argc, argv, "l:o:h")) != -1) {
+	while ((opt = getopt(argc, argv, "l:o:t:h")) != -1) {
                 switch(opt){
                 case 'h' :
                         usage();
                         break;
+		case 't' :
+			ptr = argv[6];
                 case 'o' :
                         offset = strtoul(optarg, NULL, 16);;
                         if ((offset < 0) || (offset > 0x80000000)) {
@@ -111,8 +115,7 @@ int main (int argc, char *argv[])
                         usage();
                 }
         }
-
-	if (argc < 5) {
+	if (argc < 6) {
                 printf("Error: Give exactly 9 arguments\n");
                 usage();
                 return -1;
@@ -122,15 +125,7 @@ int main (int argc, char *argv[])
 	sprintf (pio_dev_path,"/dev/%s_0",PIO_CHAR_DRIVER_NAME);
 
 	pci_fd = open(pio_dev_path, O_RDWR);
-
-	if (pci_fd == -1) {
-		error(OPEN);
-	}
-        err = ioctl(pci_fd, IOCTL_EP_CHECK_TRANSLATION);
-        if (err != 0) {
-                error(IOCTL);
-	}
-
+	
 	rd_wr_buf = malloc(data_size);
 
 	if (!rd_wr_buf) {
@@ -142,6 +137,16 @@ int main (int argc, char *argv[])
 	if (!verif_buf) {
 		error(MALLOC_VERIF);
 	}
+
+	if (pci_fd == -1) {
+		error(OPEN);
+	}
+	if(strcmp(argv[6],"ingress")==0) {
+        	err = ioctl(pci_fd, IOCTL_INGRESS_EP_CHECK_TRANSLATION);
+        	if (err != 0) {
+                	error(IOCTL);
+		}
+
 
 	/* Fill the rd/wr buffer with random data */
 	srand(time(NULL));
@@ -194,6 +199,13 @@ int main (int argc, char *argv[])
 			printf("Data Read => 0x%x \t Data Expected => 0x%x at location %d\n",
 			       rd_wr_buf[i], verif_buf[i], i);
 		break;
+		}
+	}
+}
+	if ( strcmp(argv[6],"egress") ==0 ){
+        	err = ioctl(pci_fd, IOCTL_EGRESS_EP_CHECK_TRANSLATION);
+        	if (err != 0) {
+                	error(IOCTL);
 		}
 	}
 

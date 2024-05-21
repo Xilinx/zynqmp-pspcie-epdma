@@ -184,12 +184,15 @@ static long pio_ioctl(struct file *filp, unsigned int cmd,
 	volatile uint32_t translationSize = 0;
 	long err = 0;
 	struct expresso_dma_device *xdev;
+	phys_addr_t 	EGRESS_PHYS;
+	u32         	val;
+	void *kbuf;
 
 	xdev = filp->private_data;
 
 	switch (cmd) {
 
-	case IOCTL_EP_CHECK_TRANSLATION:
+	case IOCTL_INGRESS_EP_CHECK_TRANSLATION:
 
 		mutex_lock(&xdev->pioCharDevMutex);
 		reinit_completion(&xdev->translationCmpltn);
@@ -207,7 +210,46 @@ static long pio_ioctl(struct file *filp, unsigned int cmd,
 		xdev->pDMAEngRegs->SCRATHC1 = 0;
 		mutex_unlock(&xdev->pioCharDevMutex);
 		break;
+	
+	case IOCTL_EGRESS_EP_CHECK_TRANSLATION :
+		pr_info ("Inside EGRESS IOCTL \n");
+		mutex_lock(&xdev->pioCharDevMutex);
+		reinit_completion(&xdev->translationCmpltn);
+		kbuf = kmalloc(EGRESS_TEST_BUF_SIZE, GFP_KERNEL);
+		if (!kbuf) {
+			dev_err(xdev->dev,
+			"Failed to allocate memory for Egress testing\n");
+			goto errout;
+		}
+		EGRESS_PHYS = (unsigned long)virt_to_phys(kbuf);
+		dev_info(xdev->dev, "Egress buffer allocated => 0x%lx\n",
+			 (unsigned long)virt_to_phys(kbuf));
+		val = lower_32_bits(EGRESS_PHYS);
+		xdev->channels[1].pDMAEngRegs->SCRATHC0 = val;
+		val = upper_32_bits(EGRESS_PHYS);
+		xdev->channels[1].pDMAEngRegs->SCRATHC1 = val;
+		xdev->channels[1].pDMAEngRegs->SCRATHC2 =
+				EGRESS_TEST_BUF_SIZE;
+		xdev->channels[1].pDMAEngRegs->SCRATHC3 =
+				EP_TRANSLATION_CHECK;
+		xdev->channels[1].pDMAEngRegs->AXI_INTR_ASSERT.BIT.SOFTWARE_INTRPT = 1;
+		dev_info(xdev->dev, "Egress buffer received => 0x%llx ",(int *)kbuf);
+		translationSize = xdev->channels[1].pDMAEngRegs->SCRATHC2;
+		if(translationSize > 0) {
+		    xdev->pioMappedTranslationSize =
+		    		translationSize;
+		}else {
+			err = -EAGAIN;
+		}
+		xdev->channels[1].pDMAEngRegs->SCRATHC2 = 0;
+		mutex_unlock(&xdev->pioCharDevMutex);
 
+		mdelay(2000);
+		printk("Post egress transfer buf val[0] = %lx\n", readl(kbuf+0));
+		printk("Post egress transfer buf val[1] = %lx\n", readl(kbuf+4));
+		break;
+	errout:
+		err = -EINVAL;
 	default:
 		err = -EINVAL;
 
